@@ -43,10 +43,10 @@ class TagWidget extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-            viewModel.clear();
+            viewModel.startNfc();
         },
         icon: const Icon(Icons.refresh),
-        label: const Text('Refresh'),
+        label: const Text('Restart'),
       ),
     );
   }
@@ -58,11 +58,6 @@ class TagViewModel extends ChangeNotifier {
 
   TagViewModel() {
     startNfc();
-  }
-
-  void clear() {
-    _message = null;
-    notifyListeners();
   }
 
   String listToHexString(Uint8List list) {
@@ -77,6 +72,9 @@ class TagViewModel extends ChangeNotifier {
   }
 
   Future<void> startNfc() async {
+    _message = null;
+    notifyListeners();
+    await NfcManager.instance.stopSession();
     // Check the availability of NFC on the current device.
     NfcAvailability availability = await NfcManager.instance.checkAvailability();
     if (availability != NfcAvailability.enabled) {
