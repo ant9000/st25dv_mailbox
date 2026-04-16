@@ -80,6 +80,7 @@ class TagViewModel extends ChangeNotifier {
           if (t != null) {
             final st25dv = St25dv(tag: t!, debug: true);
 
+            final start = DateTime.now();
             try {
               _message = "### found tag: ${listToHexString(t.tag.id)} ###";
               notifyListeners();
@@ -88,7 +89,7 @@ class TagViewModel extends ChangeNotifier {
               } on Exception catch(error) {
                 // ignore
               }
-              final msg = Uint8List.fromList(List<int>.generate(64, (int i) => i));
+              final msg = Uint8List.fromList(List<int>.generate(240, (int i) => i));
               _message = _message! + "\n### >>> ${listToHexString(msg)} ###";
               notifyListeners();
               await st25dv.mailbox_put(msg);
@@ -99,6 +100,9 @@ class TagViewModel extends ChangeNotifier {
             } on Exception catch (error) {
               _message = _message! + "\nERROR: ${error}";
             }
+            final stop = DateTime.now();
+            final elapsed = stop.difference(start).inMilliseconds;
+            _message = _message! + "\n### handshake completed in ${elapsed} ms";
             notifyListeners();
           }
         },
