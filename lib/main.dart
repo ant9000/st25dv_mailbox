@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager/src/nfc_manager_android/tags/nfc_v.dart';
 
+import 'st25dv.dart';
+import 'utils.dart';
+
 void main() {
   runApp(const MainApp());
 }
@@ -60,17 +63,6 @@ class TagViewModel extends ChangeNotifier {
     startNfc();
   }
 
-  String listToHexString(Uint8List list) {
-    var hex = "";
-    for (int i = 0; i < list.length; i++) {
-      var x = list[i].toRadixString(16);
-      if(x.length == 1) x = "0$x";
-      hex += x;
-      if (i < list.length - 1) hex += ':';
-    }
-    return hex;
-  }
-
   Future<void> startNfc() async {
     _message = null;
     notifyListeners();
@@ -85,32 +77,24 @@ class TagViewModel extends ChangeNotifier {
         pollingOptions: {NfcPollingOption.iso15693},
         onDiscovered: (NfcTag tag) async {
           NfcVAndroid? t = NfcVAndroid.from(tag);
-          Uint8List request, response;
           if (t != null) {
-            Future<Uint8List> send(List<int> data) async {
-              final request = Uint8List.fromList(data);
-              _message = _message! + "\nsending request ${listToHexString(request)}";
-              notifyListeners();
-              final start = DateTime.now();
-              final response = await t.transceive(request);
-              final stop = DateTime.now();
-              final elapsed = stop.difference(start).inMilliseconds;
-              _message = _message! + "\ngot response: ${listToHexString(response)} in ${elapsed} ms";
-              notifyListeners();
-              if (response[0] & 0x01 != 0) throw Exception("error code ${response[1]}");
-              return response;
-            }
+            final st25dv = St25dv(tag: t!, debug: true);
 
             try {
-              _message = "found tag: ${listToHexString(t.tag.id)}";
+              _message = "### found tag: ${listToHexString(t.tag.id)} ###";
               notifyListeners();
-              // read message length
-              response = await send([0x20, 0xAB, 0x02, ...t.tag.id]);
-              // read message
-              response = await send([0x20, 0xAC, 0x02, ...t.tag.id, 0x00, response[1]]);
-              // write message
-              final List<int> msg = List<int>.generate(240, (int i) => 240 - i);
-              response = await send([0x20, 0xAA, 0x02, ...t.tag.id, msg.length - 1, ...msg]);
+              try {
+                await st25dv.mailbox_clear();
+              } on Exception catch(error) {
+                // ignore
+              }
+              final msg = Uint8List.fromList(List<int>.generate(64, (int i) => i));
+              _message = _message! + "\n### >>> ${listToHexString(msg)} ###";
+              notifyListeners();
+              await st25dv.mailbox_put(msg);
+              final ans = await st25dv.mailbox_get();
+              _message = _message! + "\n### <<< ${listToHexString(ans)} ###";
+              notifyListeners();
               _message = _message! + "\nOK";
             } on Exception catch (error) {
               _message = _message! + "\nERROR: ${error}";
