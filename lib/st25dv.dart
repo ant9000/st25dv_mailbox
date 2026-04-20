@@ -5,15 +5,15 @@ import 'package:nfc_manager/src/nfc_manager_android/tags/nfc_v.dart';
 import 'utils.dart';
 
 class St25dv {
-  St25dv({required this.tag, this.debug});
+  St25dv({required this.tag, this.debug = false});
 
-  bool? debug;
+  bool debug;
 
   final NfcVAndroid tag;
 
   Future<Uint8List> _send(List<int> data) async {
     final request = Uint8List.fromList(data);
-    if (debug == true) {
+    if (debug) {
       print("sending request ${listToHexString(request)}");
     }
     final start = DateTime.now();
@@ -34,13 +34,13 @@ class St25dv {
   Future<Uint8List> mailbox_get() async {
     Uint8List response;
     // poll until there is a response...
-    int retries = 5;
+    int retries = 10;
     while(retries-- > 0) {
       await Future.delayed(Duration(milliseconds: 10));
       // read MB_CTRL_Dyn
       try {
         response = await _send([0x20, 0xAD, 0x02, ...tag.tag.id, 0x0D]);
-        if (response[1] & 0x40 == 0x40) break;
+        if (response[1] & 0x42 == 0x42) break;
       } on Exception catch(error) {
         // ignore
       }
