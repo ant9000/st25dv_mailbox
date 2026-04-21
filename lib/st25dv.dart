@@ -46,12 +46,8 @@ class St25dv {
       }
     }
     if (retries <= 0) throw Exception("timed out");
-    // read message length
-    response = await _send([0x20, 0xAB, 0x02, ...tag.tag.id]);
-    final len = response[1];
-    if (len == 0) throw Exception("empty mailbox");
     // read message
-    response = await _send([0x20, 0xAC, 0x02, ...tag.tag.id, 0x00, len]);
+    response = await _send([0x20, 0xAC, 0x02, ...tag.tag.id, 0x00, 0x00]);
     return Uint8List.sublistView(response, 1, response.length-1);
   }
 
