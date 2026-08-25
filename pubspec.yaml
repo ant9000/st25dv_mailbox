@@ -7,7 +7,7 @@ environment:
   sdk: ^3.11.4
 
 dependencies:
-  cryptography_flutter: ^2.3.4
+  cryptography: ^2.9.0
   flutter:
     sdk: flutter
   nfc_manager: ^4.2.1
