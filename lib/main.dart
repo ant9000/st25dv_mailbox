@@ -88,7 +88,7 @@ class TagViewModel extends ChangeNotifier {
       signed = SignedMessage.fromList(ans);
       if (await signed.isValid()) {
         final seed = signed.message;
-        _message = _message! + "\n### SEED: ${listToHexString(Uint8List.fromList(seed))} ###";
+        _message = _message! + "\n### SEED: ${Uint8List.fromList(seed).toHexString()} ###";
         notifyListeners();
         signed = await identity.sign(seed);
         msg = Uint8List.fromList(signed.toList());
@@ -125,7 +125,7 @@ class TagViewModel extends ChangeNotifier {
           final NfcVAndroid? t = NfcVAndroid.from(tag);
           if (t != null) {
             st25dv = St25dv(tag: t!);
-            _message = "### found tag: ${listToHexString(t.tag.id)} ###";
+            _message = "### found tag: ${t.tag.id.toHexString()} ###";
             notifyListeners();
             try {
               await st25dv!.mailbox_clear();

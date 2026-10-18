@@ -3,15 +3,17 @@ import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
 import 'package:path_provider/path_provider.dart';
 
-String listToHexString(Uint8List list) {
-  var hex = "";
-  for (int i = 0; i < list.length; i++) {
-    var x = list[i].toRadixString(16);
-    if(x.length == 1) x = "0$x";
-    hex += x;
-    if (i < list.length - 1) hex += ':';
+extension Uint8ListExtension on Uint8List {
+  String toHexString({String separator = ":"}) {
+    var hex = "";
+    for (int i = 0; i < this.length; i++) {
+      var x = this[i].toRadixString(16);
+      if(x.length == 1) x = "0$x";
+      hex += x;
+      if (i < this.length - 1) hex += separator;
+    }
+    return hex;
   }
-  return hex;
 }
 
 class Identity {
@@ -43,7 +45,7 @@ class Identity {
   Future<List<int>> get publicKey async {
     final kp = await _keyPair;
     final pub = await kp.extractPublicKey();
-    print("PubKey: ${listToHexString(Uint8List.fromList(pub.bytes))}");
+    print("PubKey: ${Uint8List.fromList(pub.bytes).toHexString()}");
     return pub.bytes;
   }
 

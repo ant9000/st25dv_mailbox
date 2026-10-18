@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-
 import 'package:nfc_manager/src/nfc_manager_android/tags/nfc_v.dart';
 
 import 'utils.dart';
@@ -8,20 +7,21 @@ class St25dv {
   St25dv({required this.tag, this.debug = false});
 
   bool debug;
+  bool needsTrailingZeroFix = false;
 
   final NfcVAndroid tag;
 
   Future<Uint8List> _send(List<int> data) async {
     final request = Uint8List.fromList(data);
     if (debug) {
-      print("sending request ${listToHexString(request)}");
+      print("sending ${request.length} bytes request ${request.toHexString()}");
     }
     final start = DateTime.now();
     final response = await tag.transceive(request);
     final stop = DateTime.now();
     final elapsed = stop.difference(start).inMilliseconds;
     if (debug == true) {
-      print("got response: ${listToHexString(response)} in ${elapsed} ms");
+      print("got ${response.length} bytes response: ${response.toHexString()} in ${elapsed} ms");
     }
     if (response[0] & 0x01 != 0) throw Exception("error code ${response[1]}");
     return response;
@@ -48,7 +48,7 @@ class St25dv {
     if (retries <= 0) throw Exception("timed out");
     // read message
     response = await _send([0x20, 0xAC, 0x02, ...tag.tag.id, 0x00, 0x00]);
-    return Uint8List.sublistView(response, 1, response.length-1);
+    return Uint8List.sublistView(response, 1, response.length - (needsTrailingZeroFix? 1 : 0));
   }
 
   Future<void> mailbox_clear() async {
@@ -60,13 +60,12 @@ class St25dv {
       // ignore
       return;
     }
+    if (response.length == 3 && response[2] == 0) {
+        needsTrailingZeroFix = true;
+    }
     if (response![1] & 0x40 == 0) return;
-    // read message length
-    response = await _send([0x20, 0xAB, 0x02, ...tag.tag.id]);
-    final len = response[1];
-    if (len == 0) return;
-    // read message
-    await _send([0x20, 0xAC, 0x02, ...tag.tag.id, 0x00, len]);
+    // discard an eventual leftover message
+    await _send([0x20, 0xAC, 0x02, ...tag.tag.id, 0x00, 0x00]);
   }
 
 }
